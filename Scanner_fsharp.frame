@@ -1,162 +1,153 @@
 -->begin
-#light "off"
 -->namespace
-open System;
-open System.Text;
-open System.IO;
-open System.Collections.Generic;
+open System
+open System.Text
+open System.IO
+open System.Collections.Generic
 
-let post_dec r = 
+let post_dec r =
   let v = r-1 in v
 
-let post_inc r = 
+let post_inc r =
   let v = r+1 in v
 
-type Token = 
-	class
-		val kind : int			//token kind 
-		val pos : int			//token position in the source text (starting at 0)
-		val col : int			//token column (starting at 1)
-		val line : int			//token line (strating at 1)
-		val value : String		//token value
-		val mutable next : Token option //ML 2005-03-11 Tokens are kept in a linked list
+type Token =
+    val kind : int          //token kind
+    val pos : int           //token position in the source text (starting at 0)
+    val col : int           //token column (starting at 1)
+    val line : int          //token line (strating at 1)
+    val value : String      //token value
+    val mutable next : Token option //ML 2005-03-11 Tokens are kept in a linked list
 
-		new (k, p, c, l, v, n) = {kind = k; pos = p; col = c; line = l; value = v; next = n};
-end
+    new (k, p, c, l, v, n) = {kind = k; pos = p; col = c; line = l; value = v; next = n}
 
 exception Result of string*int
 
 
-//Para a leitura do ficheiro, esta será uma função externa
+//Para a leitura do ficheiro, esta serï¿½ uma funï¿½ï¿½o externa
 let EOF : int  = (int Char.MaxValue) + 1
 let EOL : char = '\n'
 
-type Buffer(stream:Stream) = 
-class
-	let MAX_BUFFER_LENGTH : int     = 64 * 1024
-	let mutable utf : bool          = false
+type Buffer(stream:Stream) =
+    let MAX_BUFFER_LENGTH : int     = 64 * 1024
+    let mutable utf : bool          = false
 
-        member x.pos
-            with get()      = stream.Position |> int
-            and  set(v:int) = stream.Position <- int64 v
+    member x.pos
+        with get()      = stream.Position |> int
+        and  set(v:int) = stream.Position <- int64 v
 
-	member x.Read()= 
-		let ch = ref 0 in
-                        ch := stream.ReadByte();
-                        if !ch = -1 then EOF else begin 
-                            while((!ch >= 128) && ((!ch &&& 0xC0) <> 0xC0) && (!ch <> EOF)) do
-                                    ch:= stream.ReadByte();
-                            done;
+    member x.Read()=
+        let ch = ref 0
+        ch := stream.ReadByte()
+        if !ch = -1 then EOF else (
+            while((!ch >= 128) && ((!ch &&& 0xC0) <> 0xC0) && (!ch <> EOF)) do
+                ch:= stream.ReadByte()
 
-                            if (!ch >= 128 || !ch <>  EOF) then (*If char is minor to 128 or equals to EOF then ther's nothing to do*)
-                                    // nothing to do, first 127 chars are the same in ascii and utf8
-                                    // 0xxxxxxx or end of file character
-                            if ((!ch &&& 0xF0) = 0xF0) then
-                                    // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-                                    let c1 = !ch &&& 0x07 in ch :=  stream.ReadByte();
-                                    let c2 = !ch &&& 0x3F in ch :=  stream.ReadByte();
-                                    let c3 = !ch &&& 0x3F in ch :=  stream.ReadByte();
-                                    let c4 = !ch &&& 0x3F in
-                                    ch := (((((c1 <<< 6) ||| c2) <<< 6) ||| c3) <<< 6) ||| c4;
-                            else if ((!ch &&& 0xE0) = 0xE0) then
-                                    // 1110xxxx 10xxxxxx 10xxxxxx
-                                    let c1 = !ch &&& 0x0F in ch :=  stream.ReadByte();
-                                    let c2 = !ch &&& 0x3F in ch :=  stream.ReadByte();
-                                    let c3 = !ch &&& 0x3F in
-                                    ch := (((c1 <<< 6) ||| c2) <<< 6) ||| c3;
-                            else if ((!ch &&& 0xC0) = 0xC0) then (
-                                    // 110xxxxx 10xxxxxx
-                                    let c1 = !ch &&& 0x1F in ch :=  stream.ReadByte();
-                                    let c2 = !ch &&& 0x3F in
-                                    ch := (c1 <<< 6) ||| c2;
-                                    );
-                            int !ch
-                        end
-end 
-
-type scanner(stream:Stream) =
-class
-	let mutable buffer : Buffer                     = new Buffer(stream)      
-	let eofSym : int                                = 0
-	let mutable t : Token                           = new Token (0,0,0,0,"dummy",None)
-	let mutable ch : int                            = int '\n'
-	let mutable col : int                           = 0
-	let mutable line : int                          = 1
-	let mutable oldEols : int                       = 0
-	let mutable tval : StringBuilder                = new StringBuilder()
-	let mutable start : Dictionary<int, int>        = new Dictionary<int,int>(128)
-	let mutable tlen : int                          = 0
-	let Impossible : System.Exception               = new System.Exception ()
-	let mutable lineStart : int                     = 0
-        let mutable peeks   : Token list                = []
-        let mutable curpeek : Token list                = []
-
-        let nextch () = 
-            if oldEols > 0 then ( ch <- int EOL; oldEols <- post_dec oldEols)
-            else ( ch <- int(buffer.Read()); 
-                    //buffer.pos <- post_inc buffer.pos; nonsense!
-            if ch = int EOL then (line <- post_inc line; lineStart <- buffer.pos + 1))
-            -->casing1
-
-        -->declarations
-        do (
-                -->initialization
-		for i = 0 to EOF-2 do 
-			if start.ContainsKey(i)=false then start.Add(i,0); 
-		done;
+            if (!ch >= 128 || !ch <>  EOF) then (*If char is minor to 128 or equals to EOF then ther's nothing to do*)
+                // nothing to do, first 127 chars are the same in ascii and utf8
+                // 0xxxxxxx or end of file character
+            if ((!ch &&& 0xF0) = 0xF0) then
+                // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+                let c1 = !ch &&& 0x07 in ch :=  stream.ReadByte()
+                let c2 = !ch &&& 0x3F in ch :=  stream.ReadByte()
+                let c3 = !ch &&& 0x3F in ch :=  stream.ReadByte()
+                let c4 = !ch &&& 0x3F
+                ch := (((((c1 <<< 6) ||| c2) <<< 6) ||| c3) <<< 6) ||| c4
+            else if ((!ch &&& 0xE0) = 0xE0) then
+                // 1110xxxx 10xxxxxx 10xxxxxx
+                let c1 = !ch &&& 0x0F in ch :=  stream.ReadByte()
+                let c2 = !ch &&& 0x3F in ch :=  stream.ReadByte()
+                let c3 = !ch &&& 0x3F
+                ch := (((c1 <<< 6) ||| c2) <<< 6) ||| c3
+            else if ((!ch &&& 0xC0) = 0xC0) then (
+                // 110xxxxx 10xxxxxx
+                let c1 = !ch &&& 0x1F in ch :=  stream.ReadByte()
+                let c2 = !ch &&& 0x3F
+                ch := (c1 <<< 6) ||| c2
+                )
+            int !ch
         )
 
-	member x.AddCh() = 
-		-->casing2
-		x.NextCh()
+type scanner(stream:Stream) =
+    let mutable buffer : Buffer                     = new Buffer(stream)
+    let eofSym : int                                = 0
+    let mutable t : Token                           = new Token (0,0,0,0,"dummy",None)
+    let mutable ch : int                            = int '\n'
+    let mutable col : int                           = 0
+    let mutable line : int                          = 1
+    let mutable oldEols : int                       = 0
+    let mutable tval : StringBuilder                = new StringBuilder()
+    let mutable start : Dictionary<int, int>        = new Dictionary<int,int>(128)
+    let mutable tlen : int                          = 0
+    let Impossible : System.Exception               = new System.Exception ()
+    let mutable lineStart : int                     = 0
+    let mutable peeks   : Token list                = []
+    let mutable curpeek : Token list                = []
 
-	member x.NextCh() = nextch()
-		
-	-->comments
+    let nextch () =
+        if oldEols > 0 then ( ch <- int EOL; oldEols <- post_dec oldEols)
+        else ( ch <- int(buffer.Read())
+               //buffer.pos <- post_inc buffer.pos; nonsense!
+               if ch = int EOL then (line <- post_inc line; lineStart <- buffer.pos + 1))
+        -->casing1
+
+    -->declarations
+    do (
+        -->initialization
+        for i = 0 to EOF-2 do
+            if start.ContainsKey(i)=false then start.Add(i,0)
+    )
+
+    member x.AddCh() =
+        -->casing2
+        x.NextCh()
+
+    member x.NextCh() = nextch()
+
+    -->comments
 
 
 
-	member x.checkLiteral (lit:string) def=
-	-->literals
+    member x.checkLiteral (lit:string) def=
+    -->literals
 
 
-	member x.resolveKind(value:int) = 
-		match value with
-	      -1 -> eofSym
-	    |  0 -> noSym
+    member x.resolveKind(value:int) =
+        match value with
+          -1 -> eofSym
+        |  0 -> noSym
 -->scan2
-	    | _ -> raise (new Exception("resolveKind unknown kind"))
+        | _ -> raise (new Exception("resolveKind unknown kind"))
 
 
-	member x.NextToken() = 
-		try
-                            while ch = int ' ' || -->scan3 do  x.NextCh() done;
-			-->scan1
-                                    let _pos = buffer.pos in
-                                    let _col = buffer.pos - lineStart + 1 in
-                                    let _line = line in
-                                    let ccode= ch in
-                                    ignore (tval.Clear());
-                                    x.AddCh();
-                            try
-                                    let kind = x.resolveKind (start.Item(ccode)) in
-                                    let t = new Token(kind,_pos,_col,_line,tval.ToString(),None) in t
-                            with
-                                    Result (value,kind) -> let t = new Token(kind,_pos,_col,_line,value,None) in t
-		with _ -> (fprintf stdout "Char (%d) not recognized at line %d" (int ch) line; exit 1;);
+    member x.NextToken() =
+        try
+            while ch = int ' ' || -->scan3 do x.NextCh()
+-->scan1
+                let _pos = buffer.pos
+                let _col = buffer.pos - lineStart + 1
+                let _line = line
+                let ccode= ch
+                ignore (tval.Clear())
+                x.AddCh()
+                try
+                    let kind = x.resolveKind (start.Item(ccode))
+                    let t = new Token(kind,_pos,_col,_line,tval.ToString(),None) in t
+                with
+                    Result (value,kind) -> let t = new Token(kind,_pos,_col,_line,value,None) in t
+        with _ -> (fprintf stdout "Char (%d) not recognized at line %d" (int ch) line; exit 1;)
 
-        member x.Scan()      =
-            match peeks with
-                | []     -> x.NextToken()
-                | hd::tl -> peeks <- tl; curpeek <- tl; hd
+    member x.Scan()      =
+        match peeks with
+            | []     -> x.NextToken()
+            | hd::tl -> peeks <- tl; curpeek <- tl; hd
 
-        member x.Peek()      = 
-            match curpeek with 
-                | []     -> let tok = x.NextToken() in 
-                            peeks <- peeks @ [tok]; tok
-                | hd::tl -> curpeek <- tl; hd
+    member x.Peek()      =
+        match curpeek with
+            | []     -> let tok = x.NextToken() in
+                        peeks <- peeks @ [tok]; tok
+            | hd::tl -> curpeek <- tl; hd
 
-        member x.ResetPeek() = curpeek <- peeks
-end
- 
+    member x.ResetPeek() = curpeek <- peeks
+
 $$$
