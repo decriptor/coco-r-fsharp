@@ -138,75 +138,74 @@ namespace at.jku.ssw.Coco {
 	//------------------------ scanner generation ----------------------
 
 
-        void GenComBody(Comment com) {
-            gen.WriteLine("\t\t\t\t while more.Value  && ch <> EOF do ");
-            gen.WriteLine("\t\t\t\t\t if ({0}) ", ChCond(com.stop[0]));
-            gen.WriteLine("\t\t\t\t\t then ( ");
+        static string Tabs(int n) { return new string('\t', n); }
+
+        void GenComBody(Comment com, int indent) {
+            gen.WriteLine("{0}while more.Value && ch <> EOF do", Tabs(indent));
+            gen.WriteLine("{0}if ({1})", Tabs(indent + 1), ChCond(com.stop[0]));
+            gen.WriteLine("{0}then (", Tabs(indent + 1));
 
             if (com.stop.Length == 1) {
-                gen.WriteLine("\t\t\t\t\t\t level.Value <- post_dec level.Value;"); ;
-                gen.WriteLine("\t\t\t\t\t\t if level.Value = 0 then( ");
-                gen.WriteLine("\t\t\t\t\t\t\t oldEols <- line - line0;  ");
-                gen.WriteLine("\t\t\t\t\t\t\t x.NextCh(); ");
-                gen.WriteLine("\t\t\t\t\t\t\t result.Value <- true; ");
-                gen.WriteLine("\t\t\t\t\t\t\t more.Value <- false )");
-
-
-
+                gen.WriteLine("{0}level.Value <- post_dec level.Value;", Tabs(indent + 2));
+                gen.WriteLine("{0}if level.Value = 0 then (", Tabs(indent + 2));
+                gen.WriteLine("{0}oldEols <- line - line0;", Tabs(indent + 3));
+                gen.WriteLine("{0}x.NextCh();", Tabs(indent + 3));
+                gen.WriteLine("{0}result.Value <- true;", Tabs(indent + 3));
+                gen.WriteLine("{0}more.Value <- false )", Tabs(indent + 3));
             } else {
-                gen.WriteLine("\t\t\t\t\tx.NextCh();");
-                gen.WriteLine("\t\t\t\t\tif ({0}) then (", ChCond(com.stop[1]));
-                gen.WriteLine("\t\t\t\t\t\t level.Value <- post_dec level.Value;");
-                gen.WriteLine("\t\t\t\t\t\t if level.Value = 0 then( ");
-                gen.WriteLine("\t\t\t\t\t\t\t oldEols <- line - line0;  ");
-                gen.WriteLine("\t\t\t\t\t\t\t x.NextCh(); ");
-                gen.WriteLine("\t\t\t\t\t\t\t result.Value <- true; ");
-                gen.WriteLine("\t\t\t\t\t\t\t more.Value <- false )");
-                gen.WriteLine("\t\t\t\t\telse x.NextCh();");
-                gen.WriteLine("\t\t\t\t\t)");
+                gen.WriteLine("{0}x.NextCh();", Tabs(indent + 2));
+                gen.WriteLine("{0}if ({1}) then (", Tabs(indent + 2), ChCond(com.stop[1]));
+                gen.WriteLine("{0}level.Value <- post_dec level.Value;", Tabs(indent + 3));
+                gen.WriteLine("{0}if level.Value = 0 then (", Tabs(indent + 3));
+                gen.WriteLine("{0}oldEols <- line - line0;", Tabs(indent + 4));
+                gen.WriteLine("{0}x.NextCh();", Tabs(indent + 4));
+                gen.WriteLine("{0}result.Value <- true;", Tabs(indent + 4));
+                gen.WriteLine("{0}more.Value <- false )", Tabs(indent + 4));
+                gen.WriteLine("{0}else x.NextCh();", Tabs(indent + 3));
+                gen.WriteLine("{0})", Tabs(indent + 2));
             }
 
             if (com.nested) {
-                gen.WriteLine("\t\t\t\t\t ) else if ({0}) then (", ChCond(com.start[0])); 
+                gen.WriteLine("{0}) else if ({1}) then (", Tabs(indent + 1), ChCond(com.start[0]));
                 if (com.start.Length == 1)
-                    gen.WriteLine("\t\t\t\t\tlevel.Value <- post_inc level.Value; x.NextCh();");
+                    gen.WriteLine("{0}level.Value <- post_inc level.Value; x.NextCh();", Tabs(indent + 2));
                 else {
-                    gen.WriteLine("\t\t\t\t\tx.NextCh();");
-                    gen.WriteLine("\t\t\t\t\tif ({0}) then (", ChCond(com.start[1]));
-                    gen.WriteLine("\t\t\t\t\t\t level.Value <- post_inc level.Value; x.NextCh();");
-                    gen.WriteLine("\t\t\t\t\t)");
+                    gen.WriteLine("{0}x.NextCh();", Tabs(indent + 2));
+                    gen.WriteLine("{0}if ({1}) then (", Tabs(indent + 2), ChCond(com.start[1]));
+                    gen.WriteLine("{0}level.Value <- post_inc level.Value; x.NextCh();", Tabs(indent + 3));
+                    gen.WriteLine("{0})", Tabs(indent + 2));
                 }
             }
-            gen.WriteLine("\t\t\t\t) else x.NextCh();");
-            gen.WriteLine("\t\t\t\t done;");
-            gen.WriteLine("\t\t\t\t result.Value;");
+            gen.WriteLine("{0}) else x.NextCh();", Tabs(indent + 1));
+            gen.WriteLine("{0}result.Value;", Tabs(indent));
         }
 
 
         void GenComment(Comment com, int i) {
             gen.WriteLine();
             gen.WriteLine("\tmember x.Comment{0}() =", i);
-            gen.WriteLine("\t\tlet level = ref 1 in");
-            gen.WriteLine("\t\tlet line0 = line in");
-            gen.WriteLine("\t\tlet lineStart0 = lineStart in");
-            gen.WriteLine("\t\tlet more = ref true in");
-            gen.WriteLine("\t\tlet result = ref false in");
-            gen.WriteLine("\t\tlet pos0 = buffer.pos in");
-            gen.WriteLine("\t\tlet ch0 = ch in");
+            gen.WriteLine("\t\tlet level = ref 1");
+            gen.WriteLine("\t\tlet line0 = line");
+            gen.WriteLine("\t\tlet lineStart0 = lineStart");
+            gen.WriteLine("\t\tlet more = ref true");
+            gen.WriteLine("\t\tlet result = ref false");
+            gen.WriteLine("\t\tlet pos0 = buffer.pos");
+            gen.WriteLine("\t\tlet ch0 = ch");
             if (com.start.Length == 1) {
                 gen.WriteLine("\t\tx.NextCh();");
-                GenComBody(com);
+                GenComBody(com, 2);
             } else {
                 gen.WriteLine("\t\tx.NextCh();");
-                gen.WriteLine("\t\tif ({0}) \n\t\tthen (", ChCond(com.start[1]));
+                gen.WriteLine("\t\tif ({0})", ChCond(com.start[1]));
+                gen.WriteLine("\t\tthen (");
                 gen.WriteLine("\t\t\tx.NextCh();");
-                GenComBody(com);
+                GenComBody(com, 3);
                 gen.WriteLine("\t\t) else (");
                 gen.WriteLine("\t\t\tlineStart <- lineStart0;");
                 gen.WriteLine("\t\t\tbuffer.pos <- pos0;");
                 gen.WriteLine("\t\t\tch <- ch0;");
                 gen.WriteLine("\t\t\tline <- line0;");
-                gen.WriteLine("\t\t\t false )");
+                gen.WriteLine("\t\t\tfalse )");
 
             }
             gen.WriteLine("\t");
@@ -329,8 +328,8 @@ namespace at.jku.ssw.Coco {
 	    int[] startTab = new int[CharClass.charSetSize];
 	    FillStartTab(startTab);
 	    gen.WriteLine("let charSetSize = {0}", CharClass.charSetSize);
-	    gen.WriteLine("\t\tlet maxT = {0}", tab.terminals.Count - 1);
-            gen.WriteLine("\t\tlet noSym = {0}", tab.noSym.n);
+	    gen.WriteLine("\tlet maxT = {0}", tab.terminals.Count - 1);
+            gen.WriteLine("\tlet noSym = {0}", tab.noSym.n);
 	    gen.Flush();
 	    insertion.Seek(0,SeekOrigin.Begin);	    
 	    gen=oldGen;
@@ -339,24 +338,27 @@ namespace at.jku.ssw.Coco {
 
         void WriteStart()//Write Start Tab
         {
+            // Leading newline so frame-provided indent on the marker line becomes a blank line;
+            // all generated lines use 5 tabs to match the -->initialization context in the frame.
+            gen.WriteLine();
             for (Action action = firstState.firstAction; action != null; action = action.next)
             {
                 int targetState = action.target.state.nr;
                 if (action.typ == Node.chr)
                 {
-                    gen.WriteLine("\t\tstart.Add(" + action.sym + "," + targetState + "); ");
+                    gen.WriteLine("\t\t\t\t\tstart.Add(" + action.sym + "," + targetState + "); ");
                 }
                 else
                 {
                     CharSet s = tab.CharClassSet(action.sym);
                     for (CharSet.Range r = s.head; r != null; r = r.next)
                     {
-                        gen.Write("\t\tfor i = " + r.from + " to " + r.to + " do ");
-                        gen.WriteLine("\t\tstart.Add(i,"  + targetState + "); done;");
+                        gen.Write("\t\t\t\t\tfor i = " + r.from + " to " + r.to + " do ");
+                        gen.WriteLine("start.Add(i,"  + targetState + ")");
                     }
                 }
             }
-            gen.WriteLine("\t\tstart.Add(65535+1, -1);");
+            gen.WriteLine("\t\t\t\t\tstart.Add(65535+1, -1);");
         }
 
 
@@ -432,17 +434,17 @@ namespace at.jku.ssw.Coco {
 	    StreamReader reader=new StreamReader(insertion);
 	    Comment com=firstComment; int i=0;
 	    if (firstComment != null) {
-		gen.Write("\t\tif (");
+		gen.Write("\t\t\tif (");
 		while (com != null) {
 		    gen.Write(ChCond(com.start[0]));
 		    gen.Write(" && x.Comment{0}()", i);
 		    if (com.next != null) gen.Write(" || ");
 		    com = com.next; i++;
 		}
-		gen.Write(") then x.NextToken() ");
-        gen.WriteLine("else");
+		gen.WriteLine(") then x.NextToken()");
+		gen.WriteLine("\t\t\telse");
 	    }
-	    if (hasCtxMoves) { gen.WriteLine(); gen.Write("\t\tlet apx = ref 0"); } // pdt 
+	    if (hasCtxMoves) { gen.WriteLine(); gen.Write("\t\t\tlet apx = ref 0"); } // pdt
 	    gen.Flush();
 	    insertion.Seek(0,SeekOrigin.Begin);
 	    gen=oldGen;

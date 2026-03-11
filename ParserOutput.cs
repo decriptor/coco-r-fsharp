@@ -67,7 +67,7 @@ namespace at.jku.ssw.Coco
 
         void Indent(int n)
         {
-            for (int i = 1; i <= n; i++) gen.Append('\t');
+            for (int i = 1; i <= n; i++) gen.Append("    ");
         }
 
 
@@ -283,7 +283,8 @@ namespace at.jku.ssw.Coco
                             GenErrorMsg(syncErr, curSy);
                             s1 = (BitArray)p.set.Clone();
                             gen.Append("while (not("); GenCond(s1, p); gen.Append(")) do ");
-                            gen.Append("x.SynErr(+" + errorNr + "); x.Get();"); gen.AppendLine("done;");
+                            gen.Append("x.SynErr(+" + errorNr + "); x.Get()");
+                            gen.AppendLine();
                             break;
                         }
                     case Node.alt:
@@ -317,15 +318,14 @@ namespace at.jku.ssw.Coco
                                 GenCode(p2.sub, indent + 1, s1);
                                 if (useSwitch)
                                 {
-                                    Indent(indent); 
-                                    Indent(indent); gen.AppendLine(");");
+                                    Indent(indent + 1); gen.AppendLine(")");
                                 }
                                 p2 = p2.down;
                             }
                             Indent(indent);
                             if (equal)
                             {
-                                if (!useSwitch) 
+                                if (!useSwitch)
                                     gen.AppendLine(");");
                                 else
                                     gen.AppendLine("|_-> failwith \"impossible\"");
@@ -336,7 +336,7 @@ namespace at.jku.ssw.Coco
                                 if (useSwitch)
                                 {
                                     gen.AppendLine("|_-> x.SynErr(" + errorNr + ");");
-                                    Indent(indent); 
+                                    Indent(indent);
                                 }
                                 else
                                 {
@@ -344,7 +344,7 @@ namespace at.jku.ssw.Coco
                                 }
                             }
                             if (useSwitch) {
-                                gen.Append(");");
+                                gen.AppendLine(");");
                             }
                             break;
                         }
@@ -368,7 +368,7 @@ namespace at.jku.ssw.Coco
                             }
                             gen.AppendLine(") do (");
                             GenCode(p2, indent + 1, s1);
-                            Indent(indent); gen.AppendLine(") done;");
+                            Indent(indent); gen.AppendLine(")");
                             break;
                         }
                     case Node.opt:
@@ -393,7 +393,7 @@ namespace at.jku.ssw.Coco
                 if (Char.IsLetter(sym.name[0]))
                     gen.AppendLine("\tlet _" + sym.name + " : int = " + sym.n);
             }
-            gen.AppendLine("\t\tlet maxT: int = " + (tab.terminals.Count - 1));
+            gen.AppendLine("\tlet maxT: int = " + (tab.terminals.Count - 1));
         }
 
         void GenPragmas()
@@ -407,12 +407,12 @@ namespace at.jku.ssw.Coco
 
         void GenCodePragmas()
         {
-
             foreach (Symbol sym in tab.pragmas)
             {
-                gen.AppendLine("\t\t\t\tif (la.kind = " + sym.n + ") then (");
+                gen.AppendLine();
+                gen.AppendLine("\t\t\tif (la.kind = " + sym.n + ") then (");
                 CopySourcePart(sym.semPos, 4);
-                gen.AppendLine("\t\t\t\t);");
+                gen.AppendLine("\t\t\t);");
             }
         }
 
@@ -508,7 +508,7 @@ namespace at.jku.ssw.Coco
             CopyFramePart("-->constants");
             GenTokens(); 
             GenPragmas(); /* ML 2005/09/23 write the pragma kinds */
-            CopyFramePart("-->declarations"); CopySourcePart(tab.semDeclPos, 0);
+            CopyFramePart("-->declarations"); CopySourcePart(tab.semDeclPos, 1);
             CopyFramePart("-->pragmas"); GenCodePragmas();
             CopyFramePart("-->productions"); GenProductions();
             CopyFramePart("-->parseRoot"); gen.AppendLine("\t\tx." + tab.gramSy.name + "();");
